@@ -244,12 +244,20 @@
         }
 
         function generarImagenAleatoria(idx, modo, dif) {
-            const pos = posiciones[idx];
-            try {
-                const pool = baseImagenes[modo][dif][pos] || [];
-                if (pool.length > 0) return pool[Math.floor(Math.random() * pool.length)];
-            } catch (e) {}
-            return `https://www.fifarosters.com/assets/img/players/fifa24/faces/${240000 + Math.floor(Math.random() * 1000)}.png`;
+    const pos = posiciones[idx]; // Ej: "PO"
+    try {
+        const pool = baseImagenes[modo][dif][pos] || [];
+        if (pool.length > 0) {
+            // Selecciona una imagen al azar de TODA la lista que pusiste
+            const seleccionada = pool[Math.floor(Math.random() * pool.length)];
+            // Agregamos un "anti-caché" para que GitHub no repita la imagen vieja
+            return seleccionada + "?t=" + new Date().getTime();
+        }
+    } catch (e) {
+        console.error("Error cargando imagen:", e);
+    }
+    return `https://www.fifarosters.com/assets/img/players/fifa24/faces/${240000 + Math.floor(Math.random() * 500)}.png`;
+
         }
 
         // === 4. SINCRONIZACIÓN FIREBASE (Lectura) ===
