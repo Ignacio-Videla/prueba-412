@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SUBASTA 412 - Multijugador</title>
+    <style>
+        :root { 
+            --gold: #ffd700; 
+            --green: #2e7d32; 
+            --dark: #0a0a0a; 
+            --red: #ffffff; 
+            --card: #161616;
+        }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--dark); 
+            color: white;
+            height: 100dvh; 
+            display: flex; 
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- PANTALLA DE INICIO --- */
+        #menu-inicio {
+            position: fixed; inset: 0; 
+            background-image: url('https://st2.depositphotos.com/1704023/8308/i/450/depositphotos_83082692-stock-photo-modern-football-stadium-with-fans.jpg');
+            background-size: cover; background-position: center;
+            z-index: 2000; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; padding: 20px; text-align: center;
+        }
+        #menu-inicio::before { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, 0.7); z-index: 0; }
+        
+        .form-container {
+            position: relative; z-index: 1; background: rgba(0, 0, 0, 0.85); 
+            padding: 30px 20px; border-radius: 20px; border: 1px solid var(--gold);
+            width: 100%; max-width: 320px; box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+
+        .input-estilo, .select-estilo {
+            width: 100%; padding: 12px; border-radius: 10px; border: none; 
+            margin-bottom: 15px; background: white; color: black; 
+            font-weight: bold; text-align: center; font-size: 1rem;
+        }
+        .select-estilo { border: 2px solid var(--gold); background: #111; color: white; }
+
+        /* --- DISEÑO JUEGO --- */
+        .menu-btn { 
+            position: fixed; top: 10px; left: 10px; z-index: 1100; 
+            background: var(--gold); border: none; width: 35px; height: 35px; 
+            border-radius: 8px; font-weight: bold; cursor: pointer; color: black; 
+        }
+        
+        .chat-section { 
+            position: fixed; left: 0; top: 0; width: 240px; height: 100%;
+            background: #111; border-right: 1px solid #333; z-index: 1050;
+            transform: translateX(-100%); transition: 0.3s; display: flex; flex-direction: column;
+        }
+        .chat-section.active { transform: translateX(0); }
+        #chat-messages { flex: 1; overflow-y: auto; padding: 10px; font-size: 0.7rem; }
+
+        .main-display { 
+            flex: 1; display: flex; flex-direction: column; justify-content: center; 
+            align-items: center; padding: 5px; position: relative;
+            background-size: cover; background-position: center; transition: 0.8s;
+        }
+        .main-display::before { content: ""; position: absolute; inset: 0; background: rgba(0,0,0,0.6); z-index: 0; }
+        .main-display > * { position: relative; z-index: 1; }
+
+        .timer-box { font-size: 2.8rem; font-weight: 900; color: var(--red); margin-bottom: 5px; text-shadow: 0 0 10px rgb(255, 0, 0); }
+        
+        .silhouette-box { 
+            background: radial-gradient(circle, #006800 100%); width: 92%; max-width: 230px; 
+            aspect-ratio: 1/1; border: 3px solid var(--gold); border-radius: 20px; 
+            display: flex; justify-content: center; align-items: center; overflow: hidden; 
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.705); position: relative;
+        }
+
+        .player-img { width: 100%; height: 100%; background-size: contain; background-position: center bottom; background-repeat: no-repeat; filter: brightness(0); transition: none; }
+        .revealed { filter: brightness(1) drop-shadow(0 0 10px rgb(0, 0, 0)) !important; }
+        
+        .bottom-panel { background: #0a0a0a; border-top: 1px solid #333; padding: 8px 12px; }
+        .balance { font-size: 1.1rem; font-weight: bold; color: var(--green); text-align: center; margin-bottom: 5px; }
+        .team-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 8px; }
+        .slot { background: #1a1a1a; height: 26px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.5rem; color: #555; border: 1px solid #222; }
+        .slot.filled { background: var(--green); color: white; border: none; font-weight: bold; }
+        
+        .btn-bid { width: 100%; height: 40px; background: var(--gold); border: none; font-weight: 900; border-radius: 10px; color: black; font-size: 1rem; margin-bottom: 5px; cursor: pointer; }
+        .btn-bid:disabled { background: #444; color: #777; opacity: 0.5; }
+        .btn-next { background: #fff; display: none; height: 40px; width: 100%; border-radius: 10px; font-weight: bold; color: black; border: none; cursor: pointer; }
+        
+        /* Ocultar elementos para invitados */
+        .solo-host { display: block; }
+    </style>
+</head>
+<body>
+
+    <div id="menu-inicio">
+        <h1 style="color: var(--gold); font-size: 3rem; margin-bottom: 25px; font-style: italic; font-weight: 900; text-shadow: 2px 2px 10px #000;">Juegos NV</h1>
+        <div class="form-container">
+            <input type="text" id="nombreInput" class="input-estilo" placeholder="TU NOMBRE">
+            <input type="text" id="salaInput" class="input-estilo" placeholder="ID DE SALA (ej: 412)">
+            
+            <div id="opcionesHost" class="solo-host">
+                <label style="color: var(--gold); font-size: 0.7rem; font-weight: bold;">MODO (Solo Creador):</label>
+                <select id="modoSelect" class="select-estilo">
+                    <option value="clasico">MODO CLÁSICO ⚽</option>
+                </select>
+
+                <label style="color: var(--gold); font-size: 0.7rem; font-weight: bold;">DIFICULTAD (Solo Creador):</label>
+                <select id="dificultadSelect" class="select-estilo">
+                    <option value="facil">FÁCIL (Estrellas Mundiales)</option>
+                    <option value="medio">MEDIO (Jugadores Conocidos)</option>
+                    <option value="dificil">DIFÍCIL (Jugadores Desconocidos)</option>
+                </select>
+            </div>
+
+            <button class="btn-bid" onclick="gestionarSala('crear')">CREAR SALA</button>
+            <button class="btn-bid" style="background: var(--green); color: white;" onclick="gestionarSala('unirse')">UNIRSE A SALA</button>
+        </div>
+    </div>
+
+    <button class="menu-btn" onclick="document.getElementById('chatSide').classList.toggle('active')">☰</button>
+
+    <aside class="chat-section" id="chatSide">
+        <div style="padding:10px; background:#222; font-size:0.7rem; text-align:center; color:var(--gold); font-weight:bold">NOTICIAS DE MERCADO</div>
+        <div id="chat-messages"></div>
+    </aside>
+
+    <main class="main-display" id="mainDisplay">
+        <div id="roundInfo" style="font-size: 0.6rem; color: var(--gold); font-weight: bold; margin-bottom: 2px;">ESPERANDO CONEXIÓN...</div>
+        <div class="timer-box" id="timer">10</div>
+        <div class="silhouette-box"><div id="playerDisplay" class="player-img"></div></div>
+        <div id="labelPuja" style="margin-top:12px; background:var(--gold); color:rgb(0, 0, 0); padding:5px 25px; border-radius:50px; font-weight:900; font-size: 1.4rem;">$0M</div>
+        <div id="leaderInfo" style="font-size:0.7rem; color:var(--gold); margin-top:6px; font-weight: bold;">ESPERANDO OFERTA</div>
+    </main>
+
+    <footer class="bottom-panel">
+        <div class="balance">$<span id="saldo">1000</span>M</div>
+        <div id="teamGrid" class="team-grid"></div>
+        <input type="number" id="bidInput" placeholder="Monto..." inputmode="numeric" style="width: 100%; height: 35px; border-radius: 8px; border: none; margin-bottom: 6px; text-align: center; font-weight: bold;">
+        <button class="btn-bid" id="btnBid" onclick="usuarioPuja()">OFERTAR</button>
+        <button class="btn-next" id="idBtnNext" onclick="proximoJugador()">SIGUIENTE JUGADOR</button>
+    </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+
+    <script>
+        // === 1. CONFIGURACIÓN DE FIREBASE (¡REEMPLAZA ESTO!) ===
+        // === 1. CONFIGURACIÓN DE FIREBASE ACTUALIZADA ===
+        const firebaseConfig = {
+        apiKey: "AIzaSyB..." , // Esta la obtienes en la rueda dentada > Configuración del proyecto en Firebase
+         authDomain: "multijugador-a0a56.firebaseapp.com",
+        databaseURL: "https://multijugador-a0a56-default-rtdb.firebaseio.com/",
+     projectId: "multijugador-a0a56",
+        storageBucket: "multijugador-a0a56.appspot.com",
+        messagingSenderId: "629445030884",
+        appId: "1:629445030884:web:..." // Esta también está en la configuración de tu proyecto
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // === 2. VARIABLES GLOBALES MULTIJUGADOR ===
+        let salaID = "";
+        let isHost = false;
+        let managerNombre = "TÚ";
+        let miSaldo = 1000;
+        let miEquipo = {}; 
+        
+        let dbPrecioActual = 0;
+        let dbUltimoGanador = "Nadie";
+        let dbEstado = "esperando"; // esperando, jugando, vendido
+        let timerInterval;
+
+        const posiciones = ["PO", "DFI", "DFC1", "DFC2", "DFD", "MCD", "MC", "MCO", "CD", "SD"];
+        
+        // Base de imágenes (Acortada para el ejemplo, usa la tuya completa)
+        const baseImagenes = {       
+            clasico: {
+                facil: {
+                    "PO": ["https://cdn.futwiz.com/assets/img/fc26/faces/50534459.png", "https://cdn.futwiz.com/assets/img/fc25/faces/50523767.png", "https://cdn.futwiz.com/assets/img/fc25/faces/84098911.png", "https://cdn.futwiz.com/assets/img/fc24/faces/50524096.png"],
+                    "DFI": ["https://cdn.futwiz.com/assets/img/fc25/faces/50547915.png","https://cdn.futwiz.com/assets/img/fc25/faces/151247089.png","https://cdn.futwiz.com/assets/img/fc25/faces/100897692.png","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67372442.png?v=190945"],
+                    "DFC1":["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67312240.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67386910.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67312127.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/50561206.png?v=190945"],
+                    "DFC2":["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67316729.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67348994.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/50536173.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67341352.png?v=190945"],
+                    "DFD":["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67350350.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67341948.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67340145.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67362013.png?v=190945"],
+                    "MCD":["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67360718.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/100918549.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/50578738.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/84104747.png?v=190945"],
+                    "MC":["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67347917.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/84120458.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/50571485.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/50544264.png?v=190945"],
+                    "MCO":["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/50557919.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/50524633.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67346556.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/50584019.png?v=190945"],
+                    "CD": ["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/117672259.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/100909487.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/184751502.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/84074625.png?v=190945"],
+                    "SD":["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/134238529.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/84125165.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/134456522.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/134375751.png?v=190945"]
+                }
+            }
+        };
+
+        // === 3. LÓGICA DE SALAS ===
+        function gestionarSala(accion) {
+            const nom = document.getElementById('nombreInput').value.trim();
+            salaID = document.getElementById('salaInput').value.trim();
+            
+            if (!nom || !salaID) return alert("Ingresa tu nombre y un ID de sala");
+            managerNombre = nom.toUpperCase();
+            
+            const modo = document.getElementById('modoSelect').value;
+            const dificultad = document.getElementById('dificultadSelect').value;
+
+            document.getElementById('menu-inicio').style.display = 'none';
+            generarGrilla();
+
+            if (accion === 'crear') {
+                isHost = true;
+                // Inicializa la sala en Firebase
+                db.ref('salas/' + salaID).set({
+                    estado: "jugando",
+                    precioActual: 0,
+                    lider: "Nadie",
+                    tiempo: 10,
+                    posIndex: 0,
+                    subRonda: 1,
+                    modo: modo,
+                    dificultad: dificultad,
+                    urlImagen: generarImagenAleatoria(0, modo, dificultad)
+                });
+                
+                agregarChat("SISTEMA", `Has creado la sala ${salaID}. Eres el Host.`);
+            } else {
+                isHost = false;
+                agregarChat("SISTEMA", `Te has unido a la sala ${salaID}.`);
+            }
+
+            // Registrar jugador en la DB
+            db.ref(`salas/${salaID}/jugadores/${managerNombre}`).set({ saldo: miSaldo });
+            
+            // Comenzar a escuchar la base de datos
+            sincronizarSala();
+        }
+
+        function generarGrilla() {
+            const grid = document.getElementById('teamGrid');
+            grid.innerHTML = "";
+            posiciones.forEach((p) => {
+                const d = document.createElement('div');
+                d.className = "slot"; d.id = `slot-${p}`; d.innerText = p;
+                grid.appendChild(d);
+            });
+        }
+
+        function generarImagenAleatoria(idx, modo, dif) {
+            // Lógica simplificada de imágenes para evitar fallos si no hay array
+            const pos = posiciones[idx];
+            try {
+                const pool = baseImagenes[modo][dif][pos] || [];
+                if (pool.length > 0) return pool[Math.floor(Math.random() * pool.length)];
+            } catch (e) {}
+            // Jugador aleatorio por defecto
+            return `https://www.fifarosters.com/assets/img/players/fifa24/faces/${240000 + Math.floor(Math.random() * 1000)}.png`;
+        }
+
+        // === 4. SINCRONIZACIÓN FIREBASE (Lectura) ===
+        function sincronizarSala() {
+            db.ref('salas/' + salaID).on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return; // La sala fue borrada
+                
+                dbPrecioActual = data.precioActual;
+                dbUltimoGanador = data.lider;
+                dbEstado = data.estado;
+                
+                // Actualizar UI
+                document.getElementById('labelPuja').innerText = `$${dbPrecioActual}M`;
+                document.getElementById('timer').innerText = data.estado === 'vendido' ? "¡VENDIDO!" : data.tiempo;
+                
+                const posActual = posiciones[data.posIndex];
+                document.getElementById('roundInfo').innerText = `${posActual} | JUGADOR ${data.subRonda}/4 (${data.dificultad.toUpperCase()})`;
+                
+                const pDisp = document.getElementById('playerDisplay');
+                pDisp.style.backgroundImage = `url('${data.urlImagen}')`;
+                
+                if (miEquipo[posActual]) {
+                    document.getElementById('leaderInfo').innerText = "POSICIÓN CUBIERTA";
+                    document.getElementById('btnBid').disabled = true;
+                } else {
+                    document.getElementById('leaderInfo').innerText = dbUltimoGanador === "Nadie" ? "ESPERANDO OFERTA" : `LÍDER: ${dbUltimoGanador}`;
+                    document.getElementById('btnBid').disabled = false;
+                }
+
+                // Manejo de Estado
+                if (data.estado === 'vendido') {
+                    pDisp.classList.add('revealed');
+                    document.getElementById('btnBid').style.display = "none";
+                    
+                    // Solo el host ve el botón de siguiente
+                    if(isHost) document.getElementById('idBtnNext').style.display = "block";
+                    
+                    procesarVentaLogal(posActual, dbUltimoGanador, dbPrecioActual);
+                } else {
+                    pDisp.classList.remove('revealed');
+                    document.getElementById('btnBid').style.display = "block";
+                    document.getElementById('idBtnNext').style.display = "none";
+                }
+            });
+        }
+
+        // === 5. PUJAS Y TEMPORIZADOR (Escritura) ===
+        function usuarioPuja() {
+            if (dbEstado === 'vendido') return;
+
+            const monto = parseInt(document.getElementById('bidInput').value);
+            if (monto > dbPrecioActual && monto <= miSaldo) {
+                // Actualizar en Firebase
+                db.ref('salas/' + salaID).update({
+                    precioActual: monto,
+                    lider: managerNombre,
+                    tiempo: 10 // Reinicia el tiempo en la nube
+                });
+                
+                document.getElementById('bidInput').value = "";
+                
+                // Si eres el host, inicias/reinicias el intervalo que descuenta el tiempo
+                if (isHost && dbEstado !== 'subastando') {
+                    db.ref('salas/' + salaID).update({ estado: 'subastando' });
+                    iniciarCronometroHost();
+                }
+            }
+        }
+
+        // SOLO EL HOST MANEJA EL PASO DEL TIEMPO PARA TODOS
+        function iniciarCronometroHost() {
+            clearInterval(timerInterval);
+            let tiempoRestante = 10;
+            
+            timerInterval = setInterval(() => {
+                tiempoRestante--;
+                db.ref('salas/' + salaID).update({ tiempo: tiempoRestante });
+                
+                if (tiempoRestante <= 0) {
+                    clearInterval(timerInterval);
+                    db.ref('salas/' + salaID).update({ estado: 'vendido' });
+                }
+            }, 1000);
+        }
+
+        // === 6. LÓGICA DE CIERRE DE VENTA ===
+        // Esta función corre localmente en el dispositivo de cada jugador cuando Firebase dice "vendido"
+        let ultimaRondaProcesada = ""; 
+        function procesarVentaLogal(posActual, ganador, precio) {
+            const identificadorRonda = `${posActual}-${precio}`;
+            if(ultimaRondaProcesada === identificadorRonda) return; // Evita que se descuente dos veces
+            ultimaRondaProcesada = identificadorRonda;
+
+            if (ganador === managerNombre) {
+                miSaldo -= precio;
+                document.getElementById('saldo').innerText = miSaldo;
+                miEquipo[posActual] = true;
+                document.getElementById(`slot-${posActual}`).classList.add('filled');
+                
+                // Actualizar saldo en Firebase
+                db.ref(`salas/${salaID}/jugadores/${managerNombre}`).update({ saldo: miSaldo });
+                agregarChat("MERCADO", `¡Fichaste a un ${posActual} por $${precio}M!`);
+            } else if (ganador !== "Nadie") {
+                agregarChat("MERCADO", `${ganador} fichó un ${posActual} por $${precio}M`);
+            } else {
+                agregarChat("MERCADO", "Nadie fichó a este jugador.");
+            }
+        }
+
+        // === 7. SIGUIENTE RONDA (Solo Host) ===
+        function proximoJugador() {
+            if(!isHost) return;
+
+            db.ref('salas/' + salaID).once('value').then((snapshot) => {
+                const data = snapshot.val();
+                let nuevoSub = data.subRonda;
+                let nuevoPosIndex = data.posIndex;
+
+                if (nuevoSub < 4) {
+                    nuevoSub++;
+                } else {
+                    nuevoSub = 1;
+                    nuevoPosIndex++;
+                }
+
+                if (nuevoPosIndex >= posiciones.length) {
+                    alert("¡Subasta terminada para la sala!");
+                    // Aquí puedes redirigir a una pantalla final
+                } else {
+                    const nuevaImg = generarImagenAleatoria(nuevoPosIndex, data.modo, data.dificultad);
+                    
+                    db.ref('salas/' + salaID).update({
+                        estado: "jugando",
+                        precioActual: 0,
+                        lider: "Nadie",
+                        tiempo: 10,
+                        subRonda: nuevoSub,
+                        posIndex: nuevoPosIndex,
+                        urlImagen: nuevaImg
+                    });
+                }
+            });
+        }
+
+        function agregarChat(q, t) {
+            const m = document.getElementById('chat-messages');
+            const d = document.createElement('div');
+            d.style.background = "#1a1a1a"; d.style.padding = "5px"; d.style.marginBottom = "3px"; d.style.borderLeft = "3px solid var(--gold)";
+            d.innerHTML = `<strong style="color:var(--gold)">${q}:</strong> ${t}`;
+            m.appendChild(d); m.scrollTop = m.scrollHeight;
+        }
+    </script>
+</body>
+</html>
