@@ -93,7 +93,6 @@
         .btn-bid:disabled { background: #444; color: #777; opacity: 0.5; }
         .btn-next { background: #fff; display: none; height: 40px; width: 100%; border-radius: 10px; font-weight: bold; color: black; border: none; cursor: pointer; }
         
-        /* Ocultar elementos para invitados */
         .solo-host { display: block; }
     </style>
 </head>
@@ -151,18 +150,17 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
     <script>
-        // === 1. CONFIGURACIÓN DE FIREBASE (¡REEMPLAZA ESTO!) ===
         // === 1. CONFIGURACIÓN DE FIREBASE ACTUALIZADA ===
         const firebaseConfig = {
-        apiKey: "AIzaSyB..." , // Esta la obtienes en la rueda dentada > Configuración del proyecto en Firebase
-         authDomain: "multijugador-a0a56.firebaseapp.com",
-        databaseURL: "https://multijugador-a0a56-default-rtdb.firebaseio.com/",
-     projectId: "multijugador-a0a56",
-        storageBucket: "multijugador-a0a56.appspot.com",
-        messagingSenderId: "629445030884",
-        appId: "1:629445030884:web:..." // Esta también está en la configuración de tu proyecto
+            apiKey: "AQUESTA_É_A_TÚA_API_KEY", // Búscaa en Configuración del Proyecto en Firebase
+            authDomain: "multijugador-a0a56.firebaseapp.com",
+            databaseURL: "https://multijugador-a0a56-default-rtdb.firebaseio.com",
+            projectId: "multijugador-a0a56",
+            storageBucket: "multijugador-a0a56.appspot.com",
+            messagingSenderId: "629445030884",
+            appId: "AQUESTA_É_A_TÚA_APP_ID" // Búscaa en Configuración del Proyecto en Firebase
         };
-
+        
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
@@ -175,25 +173,24 @@
         
         let dbPrecioActual = 0;
         let dbUltimoGanador = "Nadie";
-        let dbEstado = "esperando"; // esperando, jugando, vendido
+        let dbEstado = "esperando"; 
         let timerInterval;
 
         const posiciones = ["PO", "DFI", "DFC1", "DFC2", "DFD", "MCD", "MC", "MCO", "CD", "SD"];
         
-        // Base de imágenes (Acortada para el ejemplo, usa la tuya completa)
         const baseImagenes = {       
             clasico: {
                 facil: {
-                    "PO": ["https://cdn.futwiz.com/assets/img/fc26/faces/50534459.png", "https://cdn.futwiz.com/assets/img/fc25/faces/50523767.png", "https://cdn.futwiz.com/assets/img/fc25/faces/84098911.png", "https://cdn.futwiz.com/assets/img/fc24/faces/50524096.png"],
-                    "DFI": ["https://cdn.futwiz.com/assets/img/fc25/faces/50547915.png","https://cdn.futwiz.com/assets/img/fc25/faces/151247089.png","https://cdn.futwiz.com/assets/img/fc25/faces/100897692.png","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67372442.png?v=190945"],
-                    "DFC1":["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67312240.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67386910.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67312127.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/50561206.png?v=190945"],
-                    "DFC2":["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67316729.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67348994.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/50536173.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67341352.png?v=190945"],
-                    "DFD":["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67350350.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67341948.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67340145.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67362013.png?v=190945"],
-                    "MCD":["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67360718.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/100918549.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/50578738.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/84104747.png?v=190945"],
-                    "MC":["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67347917.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/84120458.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/50571485.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/50544264.png?v=190945"],
-                    "MCO":["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/50557919.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/50524633.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67346556.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/50584019.png?v=190945"],
-                    "CD": ["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/117672259.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/100909487.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/184751502.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/84074625.png?v=190945"],
-                    "SD":["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/134238529.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/84125165.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/134456522.png?v=190945","https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/134375751.png?v=190945"]
+                    "PO": ["https://cdn.futwiz.com/assets/img/fc26/faces/50534459.png", "https://cdn.futwiz.com/assets/img/fc25/faces/50523767.png"],
+                    "DFI": ["https://cdn.futwiz.com/assets/img/fc25/faces/50547915.png"],
+                    "DFC1":["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67312240.png?v=190945"],
+                    "DFC2":["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67316729.png?v=190945"],
+                    "DFD":["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67350350.png?v=190945"],
+                    "MCD":["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67360718.png?v=190945"],
+                    "MC":["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/67347917.png?v=190945"],
+                    "MCO":["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/50557919.png?v=190945"],
+                    "CD": ["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/117672259.png?v=190945"],
+                    "SD":["https://cdn.futwiz.com/cdn-cgi/image/width=350,quality=100,format=webp/assets/img/fc26/faces/134238529.png?v=190945"]
                 }
             }
         };
@@ -214,7 +211,6 @@
 
             if (accion === 'crear') {
                 isHost = true;
-                // Inicializa la sala en Firebase
                 db.ref('salas/' + salaID).set({
                     estado: "jugando",
                     precioActual: 0,
@@ -233,10 +229,7 @@
                 agregarChat("SISTEMA", `Te has unido a la sala ${salaID}.`);
             }
 
-            // Registrar jugador en la DB
             db.ref(`salas/${salaID}/jugadores/${managerNombre}`).set({ saldo: miSaldo });
-            
-            // Comenzar a escuchar la base de datos
             sincronizarSala();
         }
 
@@ -251,13 +244,11 @@
         }
 
         function generarImagenAleatoria(idx, modo, dif) {
-            // Lógica simplificada de imágenes para evitar fallos si no hay array
             const pos = posiciones[idx];
             try {
                 const pool = baseImagenes[modo][dif][pos] || [];
                 if (pool.length > 0) return pool[Math.floor(Math.random() * pool.length)];
             } catch (e) {}
-            // Jugador aleatorio por defecto
             return `https://www.fifarosters.com/assets/img/players/fifa24/faces/${240000 + Math.floor(Math.random() * 1000)}.png`;
         }
 
@@ -265,13 +256,12 @@
         function sincronizarSala() {
             db.ref('salas/' + salaID).on('value', (snapshot) => {
                 const data = snapshot.val();
-                if (!data) return; // La sala fue borrada
+                if (!data) return; 
                 
                 dbPrecioActual = data.precioActual;
                 dbUltimoGanador = data.lider;
                 dbEstado = data.estado;
                 
-                // Actualizar UI
                 document.getElementById('labelPuja').innerText = `$${dbPrecioActual}M`;
                 document.getElementById('timer').innerText = data.estado === 'vendido' ? "¡VENDIDO!" : data.tiempo;
                 
@@ -289,19 +279,23 @@
                     document.getElementById('btnBid').disabled = false;
                 }
 
-                // Manejo de Estado
                 if (data.estado === 'vendido') {
                     pDisp.classList.add('revealed');
                     document.getElementById('btnBid').style.display = "none";
-                    
-                    // Solo el host ve el botón de siguiente
                     if(isHost) document.getElementById('idBtnNext').style.display = "block";
-                    
                     procesarVentaLogal(posActual, dbUltimoGanador, dbPrecioActual);
                 } else {
                     pDisp.classList.remove('revealed');
                     document.getElementById('btnBid').style.display = "block";
                     document.getElementById('idBtnNext').style.display = "none";
+
+                    // CORRECCIÓN: O Host detecta se hai unha poxa e inicia o cronómetro
+                    if (isHost && data.precioActual > 0 && data.tiempo === 10) {
+                        if (data.estado !== 'subastando') {
+                            db.ref('salas/' + salaID).update({ estado: 'subastando' });
+                        }
+                        iniciarCronometroHost();
+                    }
                 }
             });
         }
@@ -312,16 +306,14 @@
 
             const monto = parseInt(document.getElementById('bidInput').value);
             if (monto > dbPrecioActual && monto <= miSaldo) {
-                // Actualizar en Firebase
                 db.ref('salas/' + salaID).update({
                     precioActual: monto,
                     lider: managerNombre,
-                    tiempo: 10 // Reinicia el tiempo en la nube
+                    tiempo: 10 
                 });
                 
                 document.getElementById('bidInput').value = "";
                 
-                // Si eres el host, inicias/reinicias el intervalo que descuenta el tiempo
                 if (isHost && dbEstado !== 'subastando') {
                     db.ref('salas/' + salaID).update({ estado: 'subastando' });
                     iniciarCronometroHost();
@@ -329,7 +321,6 @@
             }
         }
 
-        // SOLO EL HOST MANEJA EL PASO DEL TIEMPO PARA TODOS
         function iniciarCronometroHost() {
             clearInterval(timerInterval);
             let tiempoRestante = 10;
@@ -345,12 +336,10 @@
             }, 1000);
         }
 
-        // === 6. LÓGICA DE CIERRE DE VENTA ===
-        // Esta función corre localmente en el dispositivo de cada jugador cuando Firebase dice "vendido"
         let ultimaRondaProcesada = ""; 
         function procesarVentaLogal(posActual, ganador, precio) {
             const identificadorRonda = `${posActual}-${precio}`;
-            if(ultimaRondaProcesada === identificadorRonda) return; // Evita que se descuente dos veces
+            if(ultimaRondaProcesada === identificadorRonda) return; 
             ultimaRondaProcesada = identificadorRonda;
 
             if (ganador === managerNombre) {
@@ -359,17 +348,13 @@
                 miEquipo[posActual] = true;
                 document.getElementById(`slot-${posActual}`).classList.add('filled');
                 
-                // Actualizar saldo en Firebase
                 db.ref(`salas/${salaID}/jugadores/${managerNombre}`).update({ saldo: miSaldo });
                 agregarChat("MERCADO", `¡Fichaste a un ${posActual} por $${precio}M!`);
             } else if (ganador !== "Nadie") {
                 agregarChat("MERCADO", `${ganador} fichó un ${posActual} por $${precio}M`);
-            } else {
-                agregarChat("MERCADO", "Nadie fichó a este jugador.");
             }
         }
 
-        // === 7. SIGUIENTE RONDA (Solo Host) ===
         function proximoJugador() {
             if(!isHost) return;
 
@@ -386,11 +371,9 @@
                 }
 
                 if (nuevoPosIndex >= posiciones.length) {
-                    alert("¡Subasta terminada para la sala!");
-                    // Aquí puedes redirigir a una pantalla final
+                    alert("¡Subasta terminada!");
                 } else {
                     const nuevaImg = generarImagenAleatoria(nuevoPosIndex, data.modo, data.dificultad);
-                    
                     db.ref('salas/' + salaID).update({
                         estado: "jugando",
                         precioActual: 0,
